@@ -1,0 +1,217 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f3f4f6;
+}
+
+.cabecalho {
+  overflow: hidden;
+  background-color: #1a1a1a;
+  padding: 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 30px;
+  position: fixed;
+  top: 0;
+  height: auto; /* deixa a altura se ajustar automaticamente */
+  min-height: 60px; /* ou 64px, dependendo do tamanho da fonte */
+  width: 100%;
+  z-index: 999;
+  box-sizing: border-box;
+}
+
+.logo {
+  font-size: 32px;
+  font-weight: bold;
+  color: #8efc63;
+}
+
+.menu-topo {
+  display: flex;
+  gap: 29px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.item-menu {
+  color: #8efc63;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 15px;
+  padding: 5px 10px;
+}
+
+.item-menu:hover {
+  color: white;
+}
+
+.vincular .botao-vincular {
+  background-color: #333;
+  padding: 8px 16px;
+  border: none;
+  color: #8efc63;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: 0.2s ease;
+}
+
+.vincular .botao-vincular:hover {
+  background-color: #4cb14c;
+  color: white;
+}
+
+.usuario {
+  font-weight: bold;
+  color: #8efc63;
+}
+
+.conteudo {
+  margin-top: 70px; /* ou o valor da altura real do cabeçalho */
+}
+
+.dashboard {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #111827;
+  color: white;
+  padding: 20px;
+  margin-top: 60px; /* altura do cabeçalho fixo */
+}
+
+.sidebar h2 {
+  margin-bottom: 24px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  margin-bottom: 12px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.menu li:hover {
+  background-color: #1f2937;
+}
+
+.conteudo {
+  flex: 1;
+  padding: 32px;
+  background-color: #ffffff;
+  overflow-y: auto;
+}
+
+.secao {
+  display: none;
+}
+
+.secao.visivel {
+  display: block;
+}
+
+.tabela-logs {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  background-color: #fff;
+}
+
+.tabela-logs th, .tabela-logs td {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.tabela-logs th {
+  background-color: #f0f0f0;
+}
+
+form label {
+  font-weight: bold;
+  display: block;
+  margin: 16px 0 4px;
+}
+
+form select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: white;
+}
+
+.tabela-vinculados th, .tabela-vinculados td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.banido {
+  background-color: #ffe6e6;
+}
+
+.btn-banir {
+  background: #e74c3c;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-desvincular {
+  background: #555;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-confirm {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+
+.modal-caixa {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 280px;
+  text-align: center;
+  animation: entrada-modal 0.2s ease-in-out;
+}
+
+.botoes-modal button {
+  margin: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-confirmar {
+  background-color: #d33;
+  color: #fff;
+}
+
+.btn-cancelar {
+  background-color: #888;
+  color: #fff;
+}
+
+@keyframes entrada-modal {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

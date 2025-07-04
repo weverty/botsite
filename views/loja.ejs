@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Loja — NovoBot</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  
+  <header class="cabecalho">
+    <div class="logo">NovoBot</div>
+    <nav class="menu-topo">
+      <a href="/" class="item-menu">HOME</a>
+<% if (user && user.twitchId === '170721291') { %>
+      <a href="/dashboard" class="item-menu">DASHBOARD</a>
+<% } %> 
+      <a href="/loja" class="item-menu">LOJA</a>
+      <a href="/perfil" class="item-menu">PERFIL</a>
+      <a href="/double" class="item-menu">DOUBLE</a>
+    </nav>
+    <div class="vincular">
+      <span class="usuario"><%= user?.twitchUsername || 'Usuário' %></span>
+    </div>
+  </header>
+
+  <% if (mensagemErro) { %>
+    <div class="toast-erro" id="mensagem-alerta"><%= mensagemErro %></div>
+  <% } %>
+
+  <% if (sucesso) { %>
+    <div class="toast-sucesso" id="mensagem-sucesso"><%= sucesso %></div>
+  <% } %>
+<% const capa = typeof capaLoja !== 'undefined' && capaLoja ? capaLoja : '/uploads/capa-padrao.jpg' %>
+
+<div class="capa-wrapper">
+  <img
+    src="<%= capa %>"
+    alt="Capa da loja"
+    class="capa-img"
+  />
+
+  <% if (user?.twitchUsername === 'weverty__17') { %>
+    <form method="POST" action="/loja/capa" enctype="multipart/form-data" class="form-capa-sobreposta">
+      <label for="input-capa" class="btn-capa-label">📷 Trocar Capa</label>
+      <input
+        id="input-capa"
+        type="file"
+        name="capa"
+        accept="image/*"
+        required
+        onchange="this.form.submit()"
+      />
+    </form>
+  <% } %>
+</div>
+<main class="loja-container">
+  <% itensPorCategoria.forEach(secao => { 
+    const nomeSlug = secao.nome.replace(/\s+/g, '-'); // evita problemas com espaços
+  %>
+    <div class="faixa-categoria-criada">
+      <div class="conteudo-categoria">
+        <% if (secao.editando) { %>
+          <form method="POST" action="/loja/categoria/renomear/<%= nomeSlug %>" class="form-editar-categoria">
+            <input type="text" name="novoNome" value="<%= secao.nome %>" required maxlength="30" />
+            <button type="submit" class="btn-salvar">💾 Salvar</button>
+            <button type="button" class="btn-cancelar" onclick="cancelarEdicao('<%= secao.nome %>')">Cancelar</button>
+          </form>
+        <% } else { %>
+          <h3><%= secao.nome %></h3>
+        <% } %>
+      </div>
+
+      <% if (!secao.editando && user?.twitchUsername === 'weverty__17') { %>
+        <div class="acoes-categoria">
+          <form method="POST" action="/loja/categoria/editar/<%= secao.nome %>" style="display: inline;">
+            <button type="submit" title="Editar categoria" class="icone-editar">✏️</button>
+          </form>
+          <button type="button" class="icone-excluir" title="Excluir categoria" onclick="abrirModalCategoria('<%= nomeSlug %>')">❌</button>
+
+          <div class="modal-confirmacao" id="modal-categoria-<%= nomeSlug %>">
+            <div class="modal-conteudo">
+              <p>Tem certeza que deseja excluir a categoria "<%= secao.nome %>"? Os itens dentro dela serão excluídos também!</p>
+              <form method="POST" action="/loja/categoria/excluir/<%= encodeURIComponent(secao.nome) %>">
+                <button type="submit" class="confirmar">Sim, excluir</button>
+                <button type="button" class="cancelar" onclick="fecharModalCategoria('<%= nomeSlug %>')">Cancelar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="cards">
+      <% secao.itens.forEach(item => { 
+        const esgotado = item.quantidade <= 0;
+        const classeBotao = esgotado ? 'sem-estoque' : (item.ativo ? '' : 'pausado');
+        const textoBotao = esgotado ? 'Sem estoque' : (item.ativo ? 'Resgatar' : 'Pausado');
+        const desabilitado = esgotado || !item.ativo;
+      %>
+        <div class="card item-card">
+          <% if (item.imagem) { %>
+            <div class="imagem-item">
+              <img src="<%= item.imagem %>" alt="Imagem do item" />
+            </div>
+          <% } %>
+
+          <% if (user?.twitchUsername === 'weverty__17') { %>
+            <div class="card-controles">
+              <form method="POST" action="/loja/pausar/<%= item._id %>" class="form-inline">
+                <button type="submit" class="btn-pausar" title="Pausar venda">⏸️</button>
+              </form>
+              <button type="button" class="btn-deletar" onclick="abrirModal('<%= item._id %>')" title="Excluir item">❌</button>
+
+              <div class="modal-confirmacao" id="modal-<%= item._id %>">
+                <div class="modal-conteudo">
+                  <p>Tem certeza que deseja deletar este item?</p>
+                  <form method="POST" action="/loja/deletar/<%= item._id %>">
+                    <button type="submit" class="confirmar">Sim, deletar</button>
+                    <button type="button" class="cancelar" onclick="fecharModal('<%= item._id %>')">Cancelar</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+          <div class="info-linha">
+            <div class="linha-rótulo">
+              <span class="label">ITEM:</span>
+              <span class="valor-inline"><%= item.nome %></span>
+            </div>
+            <div class="linha-rótulo">
+              <span class="label">VALOR:</span>
+              <span class="valor-inline"><%= item.valor %> pontos</span>
+            </div>
+            <div class="linha-rótulo">
+              <span class="label">ESTOQUE:</span>
+              <span class="valor-inline"><%= item.quantidade %></span>
+            </div>
+          </div>
+
+          <p class="descricao-caixa"><%= item.descricao %></p>
+
+          <button
+            type="button"
+            class="btn-resgatar <%= classeBotao %>"
+            <% if (desabilitado) { %> disabled style="cursor: not-allowed;" <% } else { %>
+            onclick="abrirConfirmarResgate('<%= item._id %>')" <% } %>>
+            <%= textoBotao %>
+          </button>
+
+          <div class="modal-confirmacao" id="modal-resgatar-<%= item._id %>">
+            <div class="modal-conteudo">
+              <p>Deseja realmente resgatar este item?</p>
+              <form method="POST" action="/loja/resgatar/<%= item._id %>">
+                <button type="submit" class="confirmar">Sim, resgatar</button>
+                <button type="button" class="cancelar" onclick="fecharModalResgate('<%= item._id %>')">Cancelar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+      <% if (user?.twitchUsername === 'weverty__17') { %>
+        <div class="card add-card">
+          <button
+            id="btn-adicionar-<%= nomeSlug %>"
+            onclick="mostrarFormulario('<%= nomeSlug %>')"
+            class="btn-card-adicionar"
+            type="button"
+          >
+            ➕ Adicionar Item
+          </button>
+
+          <form
+            id="form-novo-item-<%= nomeSlug %>"
+            method="POST"
+            action="/loja"
+            enctype="multipart/form-data"
+            style="display: none;"
+            class="form-novo-item"
+          >
+            <input type="hidden" name="categoria" value="<%= secao.nome %>" />
+            <input type="text" name="nome" placeholder="Nome do item" maxlength="30" required />
+            <input type="number" name="valor" placeholder="Valor" required />
+            <input type="number" name="quantidade" placeholder="Quantidade" required />
+            <input type="text" name="descricao" placeholder="Descrição do item" required />
+            <label for="input-imagem-<%= secao._id %>" class="btn-upload-imagem">📷 Escolher Imagem</label>
+<input id="input-imagem-<%= secao._id %>" type="file" name="imagem" accept="image/*" required />
+
+
+            <div class="botoes-formulario">
+              <button type="submit">Salvar</button>
+              <button type="button" onclick="cancelarFormulario()">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      <% } %>
+    </div> <!-- fecha .cards -->
+  <% }) %> <!-- fecha .forEach de categorias -->
+
+  <% if (user?.twitchUsername === 'weverty__17') { %>
+    <div class="faixa-criar-categoria" id="bloco-categoria">
+      <div id="btn-categoria-wrapper">
+        <button class="btn-criar-categoria" onclick="mostrarCategoriaForm()">➕ Criar Categoria</button>
+      </div>
+
+      <div class="card categoria-form" id="form-categoria-wrapper" style="display: none;">
+        <form method="POST" action="/loja/categoria" class="form-categoria">
+          <input type="text" name="nomeCategoria" placeholder="Nome da nova categoria" required maxlength="30" />
+          <button type="submit" class="confirmar">Salvar</button>
+          <button type="button" class="cancelar" onclick="ocultarCategoriaForm()">Cancelar</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+</main>
+<script>
+  function mostrarFormulario(slug) {
+    document.getElementById('form-novo-item-' + slug).style.display = 'flex';
+    document.getElementById('btn-adicionar-' + slug).style.display = 'none';
+  }
+
+  function cancelarFormulario() {
+    document.querySelectorAll('[id^="form-novo-item-"]').forEach(f => f.style.display = 'none');
+    document.querySelectorAll('[id^="btn-adicionar-"]').forEach(b => b.style.display = 'block');
+  }
+
+  function abrirModal(id) {
+    document.getElementById('modal-' + id).style.display = 'flex';
+  }
+
+  function fecharModal(id) {
+    document.getElementById('modal-' + id).style.display = 'none';
+  }
+
+  function abrirConfirmarResgate(id) {
+    document.getElementById('modal-resgatar-' + id).style.display = 'flex';
+  }
+
+  function fecharModalResgate(id) {
+    document.getElementById('modal-resgatar-' + id).style.display = 'none';
+  }
+
+  function mostrarCategoriaForm() {
+    document.getElementById('btn-categoria-wrapper').style.display = 'none';
+    document.getElementById('form-categoria-wrapper').style.display = 'flex';
+  }
+
+  function ocultarCategoriaForm() {
+    document.getElementById('form-categoria-wrapper').style.display = 'none';
+    document.getElementById('btn-categoria-wrapper').style.display = 'block';
+  }
+
+  function cancelarEdicao(nomeCategoria) {
+    window.location.href = '/loja';
+  }
+
+  function abrirModalCategoria(slug) {
+    document.getElementById('modal-categoria-' + slug).style.display = 'flex';
+  }
+
+  function fecharModalCategoria(slug) {
+    document.getElementById('modal-categoria-' + slug).style.display = 'none';
+  }
+
+  // Toaster desvanecer
+  const sucesso = document.getElementById('mensagem-sucesso');
+  if (sucesso) {
+    setTimeout(() => {
+      sucesso.style.transition = 'opacity 0.5s ease';
+      sucesso.style.opacity = '0';
+      setTimeout(() => sucesso.remove(), 600);
+    }, 5000);
+  }
+
+  const alerta = document.getElementById('mensagem-alerta');
+  if (alerta) {
+    setTimeout(() => {
+      alerta.style.transition = 'opacity 0.5s ease';
+      alerta.style.opacity = '0';
+      setTimeout(() => alerta.remove(), 600);
+    }, 5000);
+  }
+</script>
+</body>
+</html>

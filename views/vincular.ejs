@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vincular Contas</title>
+</head>
+<body>
+  <h1>🔗 Vincular Contas</h1>
+
+  <% if (!user) { %>
+    <a href="/auth/discord?twitch=true">🔗 Vincular Discord + Twitch</a>
+  <% } else { %>
+    <p>✅ Discord: <%= user.discordUsername %></p>
+    <p><%= user.twitchUsername ? '✅' : '❌' %> Twitch: <%= user.twitchUsername || 'Não vinculado' %></p>
+  <% } %>
+</body>
+</html>

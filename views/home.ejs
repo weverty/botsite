@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>NovoBot — Home</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="cabecalho">
+    <div class="logo">NovoBot</div>
+
+    <nav class="menu-topo">
+      <a href="/" class="item-menu">HOME</a>
+<% if (user && user.twitchId === '170721291') { %>
+      <a href="/dashboard" class="item-menu">DASHBOARD</a>
+<% } %>      
+      <a href="/loja" class="item-menu">LOJA</a>
+      <a href="/perfil" class="item-menu">PERFIL</a>
+      <a href="/double" class="item-menu">DOUBLE</a>
+    </nav>
+
+<div class="vincular">
+  <% if (!user?.twitchId || !user?.discordId) { %>
+    <a href="/auth/discord?twitch=true" class="botao-vincular">🔗 Vincular</a>
+  <% } else { %>
+    <span class="usuario"> <%= user.twitchUsername %></span>
+  <% } %>
+</div>
+  </header>
+</body>
+</html>

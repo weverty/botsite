@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | Painel do Admin</title>
+  <link rel="stylesheet" href="/dashboard.css" />
+  <style>
+    .modal-confirm {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000;
+    }
+    .modal-caixa {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 280px;
+      text-align: center;
+      animation: entrada-modal 0.2s ease-in-out;
+    }
+    .botoes-modal button {
+      margin: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-confirmar { background-color: #d33; color: #fff; }
+    .btn-cancelar { background-color: #777; color: #fff; }
+    @keyframes entrada-modal {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+    <header class="cabecalho">
+    <div class="logo">NovoBot</div>
+    <nav class="menu-topo">
+      <a href="/" class="item-menu">HOME</a>
+<% if (user && user.twitchId === '170721291') { %>
+      <a href="/dashboard" class="item-menu">DASHBOARD</a>
+<% } %> 
+      <a href="/loja" class="item-menu">LOJA</a>
+      <a href="/perfil" class="item-menu">PERFIL</a>
+      <a href="/double" class="item-menu">DOUBLE</a>
+    </nav>
+    <div class="vincular">
+      <span class="usuario"><%= user?.twitchUsername || 'Usuário' %></span>
+    </div>
+  </header>
+  
+  <div class="dashboard">
+    <aside class="sidebar">
+      <h2>⚙️ Dashboard</h2>
+      <ul class="menu">
+        <li onclick="exibirSeção('painel')">Painel</li>
+        <li onclick="exibirSeção('discord')">Discord</li>
+        <li onclick="exibirSeção('logs')">Logs</li>
+        <li onclick="exibirSeção('config')">Config</li>
+        <li onclick="exibirSeção('banidos')">BanidosSite</li>
+        <li onclick="exibirSeção('vinculados')">Vinculados</li>
+      </ul>
+    </aside>
+
+    <main class="conteudo">
+      <section id="painel" class="secao visivel">
+        <h3>📊 Painel de Visão Geral</h3>
+        <p>Resumo de pontos, número de usuários, etc.</p>
+      </section>
+
+      <section id="discord" class="secao">
+        <h3>🤖 Integração com Discord</h3>
+        <form method="POST" action="/dashboard/discord/salvar">
+          <label>📜 Canal de Logs de Resgate:</label>
+          <select name="log_resgates">
+            <% canaisTexto.forEach(c => { %>
+              <option value="<%= c.id %>" <%= config.log_resgates === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+
+          <label>📜 Canal de Logs de Banimentos:</label>
+          <select name="log_banimentos">
+            <% canaisTexto.forEach(c => { %>
+              <option value="<%= c.id %>" <%= config.log_banimentos === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+
+          <label>🏷️ Cargo para quem entra no servidor:</label>
+          <select name="cargo_entrada">
+            <% listaCargos.forEach(r => { %>
+              <option value="<%= r.id %>" <%= config.cargo_entrada === r.id ? 'selected' : '' %>><%= r.name %></option>
+            <% }) %>
+          </select>
+
+          <label>🌟 Cargo para VIPs da Twitch:</label>
+          <select name="cargo_vip">
+            <% listaCargos.forEach(r => { %>
+              <option value="<%= r.id %>" <%= config.cargo_vip === r.id ? 'selected' : '' %>><%= r.name %></option>
+            <% }) %>
+          </select>
+
+          <label>📜 Logs do terminal do bot em canal do discord:</label>
+          <select name="canal_logs_terminal">
+            <% canaisTexto.forEach(c => { %>
+              <option value="<%= c.id %>" <%= config.canal_logs_terminal === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+
+          <button type="submit">Salvar Configurações</button>
+        </form>
+      </section>
+
+      <section id="logs" class="secao">
+        <h3>📜 Logs de Resgates</h3>
+        <table class="tabela-logs">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Usuário Twitch</th>
+              <th>Twitch ID</th>
+              <th>Item Resgatado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (logs.length === 0) { %>
+              <tr><td colspan="4">Nenhum resgate registrado ainda.</td></tr>
+            <% } else { %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td><%= new Date(log.dataHora).toLocaleString('pt-BR') %></td>
+                  <td><%= log.twitchUsername %></td>
+                  <td><%= log.twitchId %></td>
+                  <td><%= log.itemResgatado %></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="config" class="secao">
+        <h3>🔧 Configurações Gerais</h3>
+        <p>Parâmetros do site, modo manutenção, etc.</p>
+      </section>
+
+      <section id="banidos" class="secao">
+        <h3>🚫 Usuários Banidos do Site</h3>
+        <p>Lista de usuários com acesso bloqueado à loja.</p>
+      </section>
+
+      <section id="vinculados" class="secao">
+        <h3>🔗 Contas Vinculadas</h3>
+        <table class="tabela-vinculados">
+          <thead>
+            <tr>
+              <th>Twitch</th>
+              <th>ID Twitch</th>
+              <th>Discord</th>
+              <th>ID Discord</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-vinculados"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal-confirmacao" class="modal-confirm" style="display: none;">
+    <div class="modal-caixa">
+      <p id="texto-modal">Tem certeza?</p>
+      <div class="botoes-modal">
+        <button id="btn-confirmar" class="btn-confirmar">Confirmar</button>
+        <button id="btn-cancelar" class="btn-cancelar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function exibirSeção(id) {
+      document.querySelectorAll('.secao').forEach(sec => sec.classList.remove('visivel'));
+      document.getElementById(id).classList.add('visivel');
+    }
+
+    const modal = document.getElementById('modal-confirmacao');
+    const textoModal = document.getElementById('texto-modal');
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    const btnCancelar = document.getElementById('btn-cancelar');
+
+    let acaoSelecionada = '';
+    let idSelecionado = '';
+
+document.addEventListener('click', (e) => {
+  if (e.target.matches('.btn-banir, .btn-desvincular')) {
+    e.preventDefault();
+
+    acaoSelecionada = e.target.textContent.trim().toLowerCase(); // agora detecta 'banir' ou 'desbanir' ou 'desvincular'
+    idSelecionado = e.target.dataset.id;
+    const nome = e.target.dataset.nome;
+
+    textoModal.textContent = `Tem certeza que deseja ${acaoSelecionada} o usuário ${nome}?`;
+    modal.style.display = 'flex';
+  }
+});
+
+    btnCancelar.addEventListener('click', () => {
+      modal.style.display = 'none';
+      acaoSelecionada = '';
+      idSelecionado = '';
+    });
+
+btnConfirmar.addEventListener('click', async () => {
+  if (!idSelecionado || !acaoSelecionada) return;
+
+  try {
+    const rota = acaoSelecionada === 'desbanir' ? 'banir' : acaoSelecionada;
+    await fetch(`/dashboard/${rota}/${idSelecionado}`, { method: 'POST' });
+    modal.style.display = 'none';
+    atualizarVinculados();
+  } catch (err) {
+    console.error('❌ Erro ao enviar ação:', err);
+  }
+});
+
+
+    async function atualizarVinculados() {
+      try {
+        const res = await fetch('/api/vinculados');
+        const dados = await res.json();
+        const tbody = document.getElementById('tabela-vinculados');
+        tbody.innerHTML = '';
+
+        const renderizados = new Set();
+
+        dados.forEach(u => {
+          if (renderizados.has(u.discordId)) return;
+          renderizados.add(u.discordId);
+
+          const linha = document.createElement('tr');
+          if (u.banido) linha.classList.add('banido');
+
+          linha.innerHTML = `
+            <td>${u.twitchUsername}</td>
+            <td>${u.twitchId}</td>
+            <td>${u.discordUsername}</td>
+            <td>${u.discordId}</td>
+            <td>${u.status}</td>
+            <td>
+              <button type="button" class="btn-banir" data-id="${u._id}" data-nome="${u.twitchUsername}">
+                ${u.banido ? 'Desbanir' : 'Banir'}
+              </button>
+              ${!u.banido ? `
+                <button type="button" class="btn-desvincular" data-id="${u._id}" data-nome="${u.twitchUsername}">
+                  Desvincular
+                </button>
+              ` : ''}
+            </td>
+          `;
+
+          tbody.appendChild(linha);
+        });
+      } catch (err) {
+        console.error('Erro ao atualizar vinculados:', err);
+      }
+    }
+
+    setInterval(atualizarVinculados, 60000);
+    atualizarVinculados(); // inicial
+  </script>
+</body>
+</html>

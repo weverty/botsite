@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel do Bot</title>
+</head>
+<body>
+  <h1>Painel do Bot Discord</h1>
+
+  <button id="teste">🔧 Enviar ação</button>
+
+  <script>
+    document.getElementById('teste').addEventListener('click', () => {
+      fetch('/api/vips/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exemplo: true })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.sucesso) {
+          alert('Configuração salva!');
+        } else {
+          alert('Erro.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
