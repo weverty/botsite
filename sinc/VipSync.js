@@ -20,11 +20,17 @@ async function renovarToken(refreshTokenParam) {
       }
     });
 
-    const { access_token, refresh_token: novoRefresh } = res.data;
+    const { access_token, refresh_token: novoRefresh, expires_in } = res.data;
 
-    fs.writeFileSync(tokenFile, JSON.stringify({ access_token, refresh_token: novoRefresh }, null, 2));
+    const tokensAtualizados = {
+      access_token,
+      refresh_token: novoRefresh,
+      expires_in
+    };
+
+    fs.writeFileSync(tokenFile, JSON.stringify(tokensAtualizados, null, 2));
     console.log('✅ Token Twitch renovado com sucesso!');
-    return access_token;
+    return tokensAtualizados;
   } catch (err) {
     console.error('❌ Erro ao renovar token Twitch:', err.response?.data || err.message);
     return null;
@@ -32,28 +38,45 @@ async function renovarToken(refreshTokenParam) {
 }
 
 // 🔎 Busca VIPs usando token válido
-async function obterListaVIPs(token, broadcasterId) {
-  const res = await fetch(`https://api.twitch.tv/helix/channels/vips?broadcaster_id=${broadcasterId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Client-Id': process.env.TWITCH_CLIENT_ID
-    }
-  });
+async function obterListaVIPs(broadcasterId) {
+  let savedTokens;
+  try {
+    savedTokens = JSON.parse(fs.readFileSync(tokenFile));
+  } catch {
+    console.warn('⚠️ Token salvo não encontrado. Usando .env como fallback');
+    savedTokens = {
+      access_token: process.env.TWITCH_ACCESS_TOKEN,
+      refresh_token: process.env.TWITCH_REFRESH_TOKEN
+    };
+  }
 
-  const json = await res.json();
+  const fetchVIPs = async (accessToken) => {
+    const res = await fetch(`https://api.twitch.tv/helix/channels/vips?broadcaster_id=${broadcasterId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Client-Id': process.env.TWITCH_CLIENT_ID
+      }
+    });
+    return await res.json();
+  };
+
+  let json = await fetchVIPs(savedTokens.access_token);
 
   if (json.status === 401 || !json.data) {
     console.warn('⚠️ Token inválido ou expirado. Tentando renovar...');
-    const novoToken = await renovarToken(process.env.TWITCH_REFRESH_TOKEN);
-    if (!novoToken) return [];
+    const tokensRenovados = await renovarToken(savedTokens.refresh_token);
+    if (!tokensRenovados) return [];
 
-    return await obterListaVIPs(novoToken, broadcasterId);
+    savedTokens = tokensRenovados;
+    fs.writeFileSync(tokenFile, JSON.stringify(savedTokens, null, 2));
+    json = await fetchVIPs(savedTokens.access_token);
   }
 
   const lista = (json.data || []).map(vip => String(vip.user_id));
   console.log('🎖️ VIPs encontrados na Twitch:', lista.length);
   return lista;
 }
+
 
 // 🔁 Sincroniza cargos VIP no Discord
 export async function sincronizarVIPs() {
@@ -65,17 +88,24 @@ export async function sincronizarVIPs() {
   const cargoVipId = configAtual?.canalId;
   const cargoVipAnteriorId = configAnterior?.canalId;
   const twitchId = process.env.TWITCH_BROADCASTER_ID;
-  const refreshToken = process.env.TWITCH_REFRESH_TOKEN;
 
-  if (!cargoVipId || !twitchId || !refreshToken) {
+  if (!cargoVipId || !twitchId) {
     console.warn('⚠️ Configuração incompleta (.env ou banco)');
     return;
   }
 
-  const twitchToken = await renovarToken(refreshToken);
-  if (!twitchToken) return;
+  let savedTokens;
+  try {
+    savedTokens = JSON.parse(fs.readFileSync(tokenFile));
+  } catch {
+    console.warn('⚠️ Token salvo não encontrado. Usando .env como fallback');
+    savedTokens = {
+      access_token: process.env.TWITCH_ACCESS_TOKEN,
+      refresh_token: process.env.TWITCH_REFRESH_TOKEN
+    };
+  }
 
-  const listaVIPs = await obterListaVIPs(twitchToken, twitchId);
+  const listaVIPs = await obterListaVIPs(twitchId);
   const vipSet = new Set(listaVIPs);
   const vinculados = await UsuarioVinculado.find();
 
@@ -114,4 +144,3 @@ export async function sincronizarVIPs() {
     }
   }
 }
-

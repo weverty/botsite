@@ -26,6 +26,9 @@ import { sincronizarVIPs } from './sinc/VipSync.js';
 import Rodada from './models/Rodada.js';
 import Jogada from'./models/Jogada.js';
 import doubleRoutes from './routes/double.js';
+import RodadaRoleta from './models/RodadaRoleta.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 
 const { Strategy: TwitchStrategy } = twitch;
@@ -34,6 +37,9 @@ dotenv.config();
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const server = createServer(app);
+const io = new Server(server);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -44,11 +50,17 @@ app.use(express.json());
 app.use('/api/double', doubleRoutes);
 
 
+
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: 'sua_chave_secreta',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: false,        // true só se for HTTPS
+    httpOnly: true
+  }
 }));
+
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -98,7 +110,6 @@ passport.use(new DiscordStrategy({
 }));
 
 
-
 client.once('ready', async () => {
     sincronizarVIPs();
   setInterval(() => sincronizarVIPs(), 30000);
@@ -128,6 +139,8 @@ client.once('ready', async () => {
 
 
 client.login(process.env.TOKEN_DISCORD);
+
+
 
 
 
@@ -209,6 +222,39 @@ cron.schedule('*/5 * * * *', async () => {
   }
 });
 
+
+// Função que define a cor e número da rodada
+function sortearRodada() {
+  const sequenciaNumeros = [8, 1, 9, 2, 0, 10, 3, 11, 4]; // ciclo padrão
+  const numeroSorteado = sequenciaNumeros[Math.floor(Math.random() * sequenciaNumeros.length)];
+
+  let cor = 'black';
+  if (numeroSorteado === 0) cor = 'white';
+  else if ([1, 2, 3, 4].includes(numeroSorteado)) cor = 'red';
+
+  return { numero: numeroSorteado, cor };
+}
+
+// Ciclo da roleta global
+function iniciarCicloRoleta() {
+  setInterval(async () => {
+    const rodada = sortearRodada();
+
+    // Salva no MongoDB
+    await RodadaRoleta.create({
+      numero: rodada.numero,
+      cor: rodada.cor,
+      timestamp: new Date()
+    });
+
+    // Emite para todos os clientes
+    io.emit('novaRodada', rodada);
+    console.log(`🎰 Rodada emitida: ${rodada.numero} (${rodada.cor})`);
+  }, 15000); // a cada 15s
+}
+
+// Inicializa ciclo após tudo carregar
+iniciarCicloRoleta();
 
 
 async function estaOnlineNaTwitch() {
@@ -315,12 +361,35 @@ app.get('/auth/twitch', async (req, res, next) => {
   passport.authenticate('twitch', { state })(req, res, next);
 });
 
-
 app.get('/auth/twitch/callback',
   passport.authenticate('twitch', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/');
-  });
+  async (req, res) => {
+    try {
+      const twitchId = req.user.twitchId;
+
+      const usuario = await Usuario.findOne({ twitchId });
+
+      if (!usuario) {
+        console.warn('⚠️ Usuário não encontrado no banco');
+        return res.redirect('/');
+      }
+
+      req.session.user = {
+        twitchId: usuario.twitchId,
+        twitchUsername: usuario.twitchUsername,
+        discordId: usuario.discordId,
+        discordUsername: usuario.discordUsername
+      };
+
+      res.redirect('/');
+    } catch (err) {
+      console.error('❌ Erro no login:', err);
+      res.redirect('/');
+    }
+  }
+);
+
+
 
 app.use(express.urlencoded({ extended: true })); // ← isso é essencial!
 
@@ -751,26 +820,109 @@ app.get('/api/double/status', async (req, res) => {
 });
 
 app.post('/api/double/apostar', async (req, res) => {
-  const { cor, valor } = req.body;
+  try {
+    const { cor, valor } = req.body;
+    const twitchId = req.session?.user?.twitchId;
 
-  if (!cor || !valor || valor < 1) {
-    return res.status(400).json({ erro: 'Dados de aposta inválidos.' });
+    if (!twitchId) return res.json({ erro: 'Sessão inválida ou não autenticada' });
+
+    const usuario = await Usuario.findOne({ twitchId });
+    if (!usuario) return res.json({ erro: 'Usuário não encontrado' });
+
+    const saldoAtual = usuario.pontos ?? 0;
+    if (saldoAtual < valor) return res.json({ erro: 'Saldo insuficiente para apostar' });
+
+    // 🔻 Desconta os pontos antes de tudo
+    usuario.pontos -= valor;
+
+    // 🧠 Adiciona XP com base no valor apostado
+    const xpAdicional = calcularXP(valor);
+    usuario.xp += xpAdicional;
+
+    // 🎲 Sorteio
+    const numeroSorteado = sortearNumero(); // ex: 0–11
+    const corSorteada = getCorPorNumero(numeroSorteado);
+
+    // ⚙️ Multiplicador: 2x para red/black, 14x para white
+    const multiplicador = calcularMultiplicador(cor, corSorteada, numeroSorteado);
+    let ganho = 0;
+
+    if (multiplicador > 0) {
+      ganho = valor * multiplicador;
+      usuario.pontos += ganho; // 💰 Adiciona retorno se ganhou
+    }
+
+    await usuario.save();
+
+    res.json({
+      sucesso: true,
+      numero: numeroSorteado,
+      cor: corSorteada,
+      corSelecionada: cor,
+      ganho,
+      apostado: valor,
+      pontos: usuario.pontos,
+      xp: usuario.xp,
+      xpGanho: xpAdicional,
+      nivel: calcularNivel(usuario.xp),
+      faixa: faixaDoNivel(calcularNivel(usuario.xp))
+    });
+  } catch (err) {
+    console.error('❌ Erro na aposta:', err);
+    res.status(500).json({ erro: 'Erro interno no servidor ao processar aposta' });
   }
-
-  console.log(`🎯 Aposta recebida: R$${valor} em ${cor}`);
-  // Aqui você pode validar usuário, saldo, VIP, etc.
-
-  return res.json({ sucesso: true });
 });
 
 
 
-app.get('/double', (req, res) => {
-  res.render('double');
+app.get('/double', verificarBanimento, async (req, res) => {
+  const sucesso = req.session.sucesso;
+  req.session.sucesso = null;
+
+  const mensagemErro = req.session.mensagemErro;
+  req.session.mensagemErro = null;
+
+  const capaDouble = await Config.findOne({ chave: 'capaDouble' }); // se quiser usar capa personalizada
+
+  res.render('double', {
+    user: req.user,
+    usuario: req.session.usuario || null,
+    mensagemErro,
+    sucesso,
+    capaDouble: capaDouble?.valor || null
+  });
 });
 
-// Inicia o app Express
-const PORT = process.env.PORT || 3000;
+app.get('/api/perfil', async (req, res) => {
+  const twitchId = req.session?.user?.twitchId;
+  if (!twitchId) return res.status(401).json({ erro: 'Não autenticado' });
+
+  try {
+    const usuario = await Usuario.findOne({ twitchId });
+    if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado' });
+
+    res.json({
+      twitchName: usuario.twitchUsername || '',
+      twitchID: usuario.twitchId || '',
+      discordName: usuario.discordUsername || '',
+      discordID: usuario.discordId || '',
+      pontos: usuario.pontos || 0,
+      xp: usuario.xp || 0
+    });
+  } catch (err) {
+    console.error('❌ Erro ao puxar dados:', err);
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+app.get('/api/roleta', async (req, res) => {
+  const rodadaAtual = await RodadaRoleta.find().sort({ timestamp: -1 }).limit(1);
+  res.json(rodadaAtual[0]);
+});
+
+
+
+
 
 // Rotas do site
 app.get('/', (req, res) => {
@@ -778,6 +930,6 @@ app.get('/', (req, res) => {
 });
 
 // Inicia o servidor web
-app.listen(PORT, () => {
-  console.log(`🌍 Site disponível em http://localhost:${PORT}`);
+server.listen(3000, () => {
+  console.log('🌍 Site disponível em http://localhost:3000');
 });

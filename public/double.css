@@ -7,6 +7,70 @@ body {
   padding: 0;
 }
 
+.cabecalho {
+  overflow: hidden;
+  background-color: #1a1a1a;
+  padding: 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 30px;
+  position: fixed;
+  top: 0;
+  height: auto; /* deixa a altura se ajustar automaticamente */
+  min-height: 60px; /* ou 64px, dependendo do tamanho da fonte */
+  width: 100%;
+  z-index: 999;
+  box-sizing: border-box;
+}
+
+.logo {
+  font-size: 32px;
+  font-weight: bold;
+  color: #8efc63;
+}
+
+.menu-topo {
+  display: flex;
+  gap: 29px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.item-menu {
+  color: #8efc63;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 15px;
+  padding: 5px 10px;
+}
+
+.item-menu:hover {
+  color: white;
+}
+
+.vincular .botao-vincular {
+  background-color: #333;
+  padding: 8px 16px;
+  border: none;
+  color: #8efc63;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: 0.2s ease;
+}
+
+.vincular .botao-vincular:hover {
+  background-color: #4cb14c;
+  color: white;
+}
+
+.usuario {
+  font-weight: bold;
+  color: #8efc63;
+}
+
 .titulo {
   background: #1f1f1f;
   padding: 20px;
@@ -71,11 +135,26 @@ body {
 }
 
 .btn-cor {
-  padding: 10px 20px;
+  width: 130px;
+  padding: 12px;
+  font-size: 16px;
   border: none;
-  font-weight: bold;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.opcoes-cor {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.selecao-cor {
+  width: 100%;
 }
 
 .valor-aposta, .controle-valor, .controle-extra {
@@ -166,4 +245,155 @@ body {
 .quadrado.white {
   background-color: #e0e0e0;
   color: black;
+}
+
+.interface-jogo {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 30px;
+}
+
+.painel-apostas {
+  width: 280px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.painel-roleta {
+  flex: 1;
+  max-width: 800px;
+}
+
+.opcoes-cor .btn-cor {
+  margin-right: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.opcoes-cor-superior {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.opcoes-cor-superior .btn-cor {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.opcao-cor-vermelho {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+#btn-apostar {
+  width: 100%;
+  padding: 18px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: #00c77e;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 199, 126, 0.4);
+  transition: transform 0.2s ease;
+  margin-top: 20px;
+}
+
+#btn-apostar:hover {
+  transform: scale(1.05);
+}
+
+#btn-apostar.apagado {
+  background-color: #2a2a2a;
+  color: #999;
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.titulo-valor h2 {
+  margin: 0;
+  font-size: 20px;
+  position: relative;
+  top: -18px; /* 🔼 sobe o título */
+  text-align: center;
+}
+
+#campo-valor {
+  width: 90%;
+  padding: 16px;
+  font-size: 22px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  text-align: center;
+  background-color: #ffffff;
+  color: #0f0;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+  margin-bottom: 10px;
+}
+
+.valor-aposta h2 {
+  margin-top: 0;
+  margin-bottom: 4px;
+  font-size: 18px;
+  position: relative;
+  top: -20px; /* 🔼 sobe o título verticalmente */
+}
+
+.perfil-apostador {
+  background-color: #1e1e1e;
+  color: #eee;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(0, 199, 126, 0.2);
+  margin-bottom: 20px;
+  max-width: 280px;
+}
+
+.card-perfil p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.card-perfil strong {
+  color: #00c77e;
+}
+
+.perfil-apostador {
+  background-color: #1e1e1e;
+  color: #eee;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(0, 199, 126, 0.2);
+  margin-bottom: 20px;
+  max-width: 280px;
+}
+
+.card-perfil p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.card-perfil strong {
+  color: #00c77e;
 }
